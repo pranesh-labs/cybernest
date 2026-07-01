@@ -1,0 +1,19 @@
+{
+  "name": "cybernest-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-ready foundation for CyberNest Cybersecurity SaaS Platform",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter @cybernest/shared-types build && pnpm --filter web build",
+    "lint": "pnpm --filter @cybernest/shared-types lint && pnpm --filter web lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

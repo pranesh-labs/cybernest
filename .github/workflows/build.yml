@@ -1,0 +1,22 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  compose-build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build development profile images
+        run: docker compose --profile development build
+
+      - name: Build production profile images
+        run: docker compose --profile production build

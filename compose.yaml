@@ -1,0 +1,142 @@
+version: "3.8"
+
+networks:
+  cybernest-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
+
+services:
+  # Database Service (Shared across dev and prod)
+  db:
+    image: postgres:16-alpine
+    container_name: cybernest-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_password_123
+      POSTGRES_DB: cybernest
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - cybernest-net
+
+  # -------------------------------------------------------------
+  # DEVELOPMENT PROFILE SERVICES
+  # -------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    container_name: cybernest-api
+    volumes:
+      - ./apps/api/app:/app/apps/api/app
+      - ./packages/shared-python:/app/packages/shared-python
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_secure_password_123
+      - POSTGRES_DB=cybernest
+      - POSTGRES_HOST=db
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_secure_password_123@db:5432/cybernest
+      - AGENT_AUTH_TOKEN=dev_agent_token_secret
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    profiles:
+      - development
+    networks:
+      - cybernest-net
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    container_name: cybernest-web
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+    ports:
+      - "3000:3000"
+    profiles:
+      - development
+    networks:
+      - cybernest-net
+
+  agent:
+    build:
+      context: .
+      dockerfile: apps/agent/Dockerfile.dev
+    container_name: cybernest-agent
+    volumes:
+      - ./apps/agent/agent:/app/apps/agent/agent
+      - ./packages/shared-python:/app/packages/shared-python
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - API_URL=http://api:8000/api/v1
+      - AGENT_AUTH_TOKEN=dev_agent_token_secret
+    depends_on:
+      - api
+    profiles:
+      - development
+    networks:
+      - cybernest-net
+
+  # -------------------------------------------------------------
+  # PRODUCTION PROFILE SERVICES
+  # -------------------------------------------------------------
+  api-prod:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.prod
+    container_name: cybernest-api-prod
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_secure_password_123
+      - POSTGRES_DB=cybernest
+      - POSTGRES_HOST=db
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_secure_password_123@db:5432/cybernest
+      - AGENT_AUTH_TOKEN=prod_agent_token_secret
+    depends_on:
+      - db
+    profiles:
+      - production
+    networks:
+      - cybernest-net
+
+  web-prod:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.prod
+    container_name: cybernest-web-prod
+    ports:
+      - "80:80"
+    profiles:
+      - production
+    networks:
+      - cybernest-net
+
+  agent-prod:
+    build:
+      context: .
+      dockerfile: apps/agent/Dockerfile.prod
+    container_name: cybernest-agent-prod
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      - API_URL=http://api-prod:8000/api/v1
+      - AGENT_AUTH_TOKEN=prod_agent_token_secret
+    depends_on:
+      - api-prod
+    profiles:
+      - production
+    networks:
+      - cybernest-net

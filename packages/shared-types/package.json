@@ -1,0 +1,16 @@
+{
+  "name": "@cybernest/shared-types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript definitions and DTOs for CyberNest",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint \"src/**/*.ts\"",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

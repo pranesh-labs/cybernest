@@ -1,0 +1,32 @@
+# Build Stage
+FROM python:3.11-slim-bookworm AS builder
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+COPY packages/shared-python/ ./packages/shared-python/
+COPY apps/api/ ./apps/api/
+
+# Create a virtual environment and sync dependencies
+RUN uv venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN uv pip install -e ./packages/shared-python -e ./apps/api
+
+# Runner Stage
+FROM python:3.11-slim-bookworm AS runner
+
+WORKDIR /app
+
+# Copy virtualenv from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy api application source
+COPY apps/api/app /app/app
+
+EXPOSE 8000
+
+# Run FastAPI app in production mode (no reload, multiple workers)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

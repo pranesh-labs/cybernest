@@ -1,0 +1,16 @@
+FROM python:3.11-slim-bookworm
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+COPY packages/shared-python/ ./packages/shared-python/
+COPY apps/agent/ ./apps/agent/
+
+RUN uv pip install --system -e ./packages/shared-python -e ./apps/agent
+
+WORKDIR /app/apps/agent
+
+# Run agent daemon in dev
+CMD ["python", "main.py"]

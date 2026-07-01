@@ -1,0 +1,21 @@
+FROM python:3.11-slim-bookworm
+
+# Install UV dependency manager
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+# Copy monorepo configuration and project source
+COPY pyproject.toml ./
+COPY packages/shared-python/ ./packages/shared-python/
+COPY apps/api/ ./apps/api/
+
+# Install in editable mode for development hot-reloads
+RUN uv pip install --system -e ./packages/shared-python -e ./apps/api
+
+WORKDIR /app/apps/api
+
+EXPOSE 8000
+
+# Run FastAPI app with reload enabled
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
